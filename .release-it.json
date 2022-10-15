@@ -1,0 +1,22 @@
+{
+	"github": {
+		"release": true,
+		"assets": [
+			"vscode-google-apps-script-*.vsix"
+		]
+	},
+	"git": {
+		"commit": false,
+		"push": false
+	},
+	"npm": {
+		"publish": false,
+		"ignoreVersion": true
+	},
+	"hooks": {
+		"before:release": [
+			"npm ci",
+			"npm run publish-local"
+		]
+	}
+}

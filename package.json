@@ -1,0 +1,139 @@
+{
+  "name": "vscode-google-apps-script",
+  "displayName": "VSCode Google Apps Script Client",
+  "description": "VSCode Google Apps Script Client",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Mayu-mic/vscode-google-apps-script"
+  },
+  "version": "0.0.0",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "vscode": "^1.72.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:projects-view"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscode-google-apps-script.refreshProjects",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "vscode-google-apps-script.downloadProject",
+        "title": "Clone..."
+      },
+      {
+        "command": "vscode-google-apps-script.openProjectUri",
+        "title": "Open Project"
+      },
+      {
+        "command": "vscode-google-apps-script.copyProjectId",
+        "title": "Copy Project ID"
+      },
+      {
+        "command": "vscode-google-apps-script.copyDeploymentId",
+        "title": "Copy Deployment ID"
+      },
+      {
+        "command": "vscode-google-apps-script.copyLibraryReference",
+        "title": "Copy Reference as Library"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "vscode-google-apps-script.refreshProjects",
+          "when": "view == projects-view",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "vscode-google-apps-script.downloadProject",
+          "when": "view == projects-view && viewItem == project",
+          "group": "1_project@1"
+        },
+        {
+          "command": "vscode-google-apps-script.openProjectUri",
+          "when": "view == projects-view && viewItem == project",
+          "group": "2_project-copy@1"
+        },
+        {
+          "command": "vscode-google-apps-script.copyProjectId",
+          "when": "view == projects-view && viewItem == project",
+          "group": "2_project-copy@2"
+        },
+        {
+          "command": "vscode-google-apps-script.copyDeploymentId",
+          "when": "view == projects-view && viewItem == deployment",
+          "group": "deployment@1"
+        },
+        {
+          "command": "vscode-google-apps-script.copyLibraryReference",
+          "when": "view == projects-view && viewItem == deployment",
+          "group": "deployment@2"
+        }
+      ]
+    },
+    "views": {
+      "vscode-google-apps-script-view": [
+        {
+          "id": "projects-view",
+          "name": "Projects"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "vscode-google-apps-script-view",
+          "title": "Google Apps Script",
+          "icon": "assets/file-text.svg"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "publish-local": "vsce package",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "commit": "git cz",
+    "prepare": "husky install",
+    "lint-staged": "lint-staged",
+    "commitlint": "commitlint"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^17.1.2",
+    "@commitlint/config-conventional": "^17.1.0",
+    "@types/glob": "^7.2.0",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "16.11.61",
+    "@types/vscode": "^1.72.0",
+    "@typescript-eslint/eslint-plugin": "^5.31.0",
+    "@typescript-eslint/parser": "^5.31.0",
+    "@vscode/test-electron": "^2.1.5",
+    "eslint": "^8.20.0",
+    "git-cz": "^4.9.0",
+    "glob": "^8.0.3",
+    "husky": "^8.0.0",
+    "lint-staged": "^13.0.3",
+    "mocha": "^10.0.0",
+    "typescript": "^4.7.4",
+    "vsce": "^2.11.0"
+  },
+  "dependencies": {
+    "googleapis": "^108.0.0"
+  }
+}

@@ -1,0 +1,41 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - release
+    paths:
+      - src/**
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_IT_VERSION: 15.5.0
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+      - name: Set releaser settings
+        run: |
+          git config --global user.name release-machine
+          git config --global user.email email@example.com
+      - name: Major release
+        id: major
+        if: contains(toJSON(github.event.commits.*.message), 'bump up version major')
+        run: npx release-it@${RELEASE_IT_VERSION} -- major --ci
+      - name: Minor release
+        id: minor
+        if: steps.major.conclusion == 'skipped'  && contains(toJSON(github.event.commits.*.message), 'bump up version minor')
+        run: npx release-it@${RELEASE_IT_VERSION} -- minor --ci
+      - name: Patch release
+        if: "!(steps.major.conclusion == 'success' || steps.minor.conclusion == 'success')"
+        run: npx release-it@${RELEASE_IT_VERSION} -- patch --ci
