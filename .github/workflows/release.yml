@@ -30,12 +30,12 @@ jobs:
           git config --global user.email email@example.com
       - name: Major release
         id: major
-        if: contains(toJSON(github.event.commits.*.message), 'bump up version major')
+        if: contains(toJSON(github.event.commits.*.message), 'BREAKING CHANGE')
         run: npx release-it@${RELEASE_IT_VERSION} -- major --ci
       - name: Minor release
         id: minor
-        if: steps.major.conclusion == 'skipped'  && contains(toJSON(github.event.commits.*.message), 'bump up version minor')
+        if: steps.major.conclusion == 'skipped' && contains(toJSON(github.event.commits.*.message), 'feat:')
         run: npx release-it@${RELEASE_IT_VERSION} -- minor --ci
       - name: Patch release
-        if: "!(steps.major.conclusion == 'success' || steps.minor.conclusion == 'success')"
+        if: steps.minor.conclusion == 'skipped' && contains(toJSON(github.event.commits.*.message), 'fix:')
         run: npx release-it@${RELEASE_IT_VERSION} -- patch --ci
