@@ -12,10 +12,7 @@ import {
   commands,
   workspace,
   QuickPickItem,
-  QuickPickItemKind,
-  QuickInputButtons,
 } from 'vscode';
-import * as fs from 'fs';
 import { showExtendedQuickPick } from '../ui/showExtendedQuickPick';
 import { Deployment, IGoogleAppsScriptClient, Project } from '../claspClient';
 
