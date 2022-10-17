@@ -10,7 +10,13 @@ import {
   Uri,
   ProgressLocation,
   commands,
+  workspace,
+  QuickPickItem,
+  QuickPickItemKind,
+  QuickInputButtons,
 } from 'vscode';
+import * as fs from 'fs';
+import { showExtendedQuickPick } from '../ui/showExtendedQuickPick';
 import { Deployment, IGoogleAppsScriptClient, Project } from '../claspClient';
 
 export class ProjectsViewProvider
@@ -30,14 +36,47 @@ export class ProjectsViewProvider
   }
 
   async downloadProject(item: ProjectItem): Promise<void> {
-    const result = await window.showOpenDialog({
-      canSelectFolders: true,
-      canSelectMany: false,
-      openLabel: 'ダウンロード先を選択',
+    const items: QuickPickItem[] = [];
+    const workspaceFolders = workspace.workspaceFolders;
+    const selectFolderLabel = '$(folder) フォルダを選択します...';
+    if (workspaceFolders) {
+      workspaceFolders.forEach((folder) => {
+        items.push({
+          label: `$(root-folder) ${folder.name}`,
+        });
+      });
+    }
+    items.push({
+      label: selectFolderLabel,
+      detail: '選択されたフォルダにプロジェクトをダウンロードします。',
     });
-    if (!result) {
+    const selectDownloadDir = await showExtendedQuickPick(items, {
+      step: 1,
+      totalSteps: 1,
+      title: 'ダウンロード先を選択してください',
+    });
+    if (!selectDownloadDir) {
       return;
     }
+    let downloadDir: Uri;
+    if (selectDownloadDir.label === selectFolderLabel) {
+      const pickedFolder = await window.showOpenDialog({
+        canSelectFolders: true,
+        canSelectMany: false,
+        openLabel: 'ダウンロード先を選択',
+      });
+      if (!pickedFolder) {
+        return;
+      }
+      downloadDir = pickedFolder[0];
+    } else {
+      const selectedFolder = workspaceFolders!.find(
+        (folder) =>
+          folder.name === selectDownloadDir.label.replace('$(root-folder) ', '')
+      );
+      downloadDir = selectedFolder!.uri;
+    }
+
     let projectDir: string;
     await window
       .withProgress(
@@ -48,7 +87,7 @@ export class ProjectsViewProvider
         async () => {
           projectDir = await this.client.downloadProject(
             item.project,
-            result[0]
+            downloadDir
           );
         }
       )
