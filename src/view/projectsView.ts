@@ -11,7 +11,7 @@ import {
   ProgressLocation,
   commands,
 } from 'vscode';
-import { Deployment, IGoogleAppsScriptClient, Project } from '../client';
+import { Deployment, IGoogleAppsScriptClient, Project } from '../claspClient';
 
 export class ProjectsViewProvider
   implements TreeDataProvider<DependencyElement>

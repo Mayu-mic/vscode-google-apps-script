@@ -1,12 +1,12 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { ClaspGoogleAppsScriptClient } from './client';
-import { detectRuntimePath } from './util/detect-runtime-path';
+import { ClaspGoogleAppsScriptClient } from './claspClient';
+import { detectRuntimePath } from './util/detectRuntimePath';
 import {
   DeploymentItem,
   ProjectItem,
   ProjectsViewProvider,
-} from './view/projects-view';
+} from './view/projectsView';
 
 let storageUri: vscode.Uri | undefined = undefined;
 

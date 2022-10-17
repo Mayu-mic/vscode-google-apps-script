@@ -46,19 +46,24 @@ export class ClaspGoogleAppsScriptClient implements IGoogleAppsScriptClient {
   }
 
   async getProjects(): Promise<Project[]> {
-    const output = (await exec(`${this.claspPath} list --noShorten`)).stdout;
-    const lines = output.split('\n');
-    const projects: Project[] = [];
-    lines.forEach((line) => {
-      const [name, url] = line.split(' - ');
-      if (name && url) {
-        const id = ClaspGoogleAppsScriptClient.getIdFromUrl(url);
-        if (id) {
-          projects.push({ name, id, url });
-        }
-      }
+    const drive = google.drive('v3');
+    const {
+      data: { files = [] },
+      status,
+    } = await drive.files.list({
+      pageSize: 50,
+      q: 'mimeType="application/vnd.google-apps.script"',
     });
-    return projects;
+
+    if (status !== 200) {
+      throw new Error(`Error fetching projects: ${status}`);
+    }
+
+    return files.map((file) => ({
+      id: file.id!,
+      name: file.name!,
+      url: `https://script.google.com/d/${file.id}/edit`,
+    }));
   }
 
   async getDeployments(projectId: string): Promise<Deployment[]> {
@@ -75,14 +80,5 @@ export class ClaspGoogleAppsScriptClient implements IGoogleAppsScriptClient {
         deployment.deploymentConfig?.versionNumber?.toString() || 'HEAD'
       }`,
     }));
-  }
-
-  private static getIdFromUrl(url: string): string | undefined {
-    const matches = url.match(
-      /https?:\/\/script\.google\.com\/d\/([^\/]+)\/edit/
-    );
-    if (matches && matches[1]) {
-      return matches[1];
-    }
   }
 }
