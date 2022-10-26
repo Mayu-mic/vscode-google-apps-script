@@ -52,7 +52,7 @@ export class ClaspGoogleAppsScriptClient implements IGoogleAppsScriptClient {
       status,
     } = await drive.files.list({
       pageSize: 50,
-      q: 'mimeType="application/vnd.google-apps.script"',
+      q: 'mimeType="application/vnd.google-apps.script" and trashed=false',
     });
 
     if (status !== 200) {
