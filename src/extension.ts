@@ -1,6 +1,6 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { ClaspGoogleAppsScriptClient } from './claspClient';
+import { ClaspGoogleAppsScriptClient } from './clients/claspClient';
 import { detectRuntimePath } from './util/detectRuntimePath';
 import {
   DeploymentItem,

@@ -14,12 +14,16 @@ import {
   QuickPickItem,
 } from 'vscode';
 import { showExtendedQuickPick } from '../ui/showExtendedQuickPick';
-import { Deployment, IGoogleAppsScriptClient, Project } from '../claspClient';
+import {
+  Deployment,
+  GoogleAppsScriptClient,
+  Project,
+} from '../clients/claspClient';
 
 export class ProjectsViewProvider
   implements TreeDataProvider<DependencyElement>
 {
-  constructor(private client: IGoogleAppsScriptClient) {}
+  constructor(private client: GoogleAppsScriptClient) {}
 
   private _onDidChangeTreeData: EventEmitter<
     void | DependencyElement | DependencyElement[] | null | undefined

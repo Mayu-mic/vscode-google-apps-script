@@ -7,7 +7,7 @@ import { Uri } from 'vscode';
 
 const exec = promisify(childProcess.exec);
 
-export interface IGoogleAppsScriptClient {
+export interface GoogleAppsScriptClient {
   downloadProject(project: Project, path: Uri): Promise<string>;
   getDeployments(projectId: string): Promise<Deployment[]>;
   getProjects(): Promise<Project[]>;
@@ -27,7 +27,7 @@ export interface Deployment {
   versionIdentity: string;
 }
 
-export class ClaspGoogleAppsScriptClient implements IGoogleAppsScriptClient {
+export class ClaspGoogleAppsScriptClient implements GoogleAppsScriptClient {
   constructor(private claspPath: string) {}
 
   async setupAuth() {
