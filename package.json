@@ -80,6 +80,16 @@
           "command": "vscode-google-apps-script.copyLibraryReference",
           "when": "view == projects-view && viewItem == deployment",
           "group": "deployment@2"
+        },
+        {
+          "command": "vscode-google-apps-script.copyProjectId",
+          "when": "view == projects-view && viewItem == version",
+          "group": "version@1"
+        },
+        {
+          "command": "vscode-google-apps-script.copyLibraryReference",
+          "when": "view == projects-view && viewItem == version",
+          "group": "version@2"
         }
       ]
     },

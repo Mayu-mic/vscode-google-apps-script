@@ -6,6 +6,7 @@ import {
   DeploymentItem,
   ProjectItem,
   ProjectsViewProvider,
+  VersionItem,
 } from './view/projectsView';
 
 let storageUri: vscode.Uri | undefined = undefined;
@@ -60,7 +61,7 @@ export async function activate(context: vscode.ExtensionContext) {
     ),
     vscode.commands.registerCommand(
       'vscode-google-apps-script.copyProjectId',
-      (item: ProjectItem) => projectsView.copyProjectId(item)
+      (item: ProjectItem | VersionItem) => projectsView.copyProjectId(item)
     ),
     vscode.commands.registerCommand(
       'vscode-google-apps-script.openProjectUri',
@@ -72,7 +73,8 @@ export async function activate(context: vscode.ExtensionContext) {
     ),
     vscode.commands.registerCommand(
       'vscode-google-apps-script.copyLibraryReference',
-      (item: DeploymentItem) => projectsView.copyLibraryReference(item)
+      (item: DeploymentItem | VersionItem) =>
+        projectsView.copyLibraryReference(item)
     ),
     vscode.window.registerTreeDataProvider('projects-view', projectsView),
   ];

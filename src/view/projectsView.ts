@@ -21,6 +21,13 @@ import {
   isHeadDeployment,
 } from '../domain/googleAppsScript';
 
+interface LibraryReference {
+  libraryId: string;
+  developmentMode: boolean;
+  version: string;
+  userSymbol: string;
+}
+
 export class ProjectsViewProvider
   implements TreeDataProvider<DependencyElement>
 {
@@ -129,18 +136,27 @@ export class ProjectsViewProvider
     window.showInformationMessage('Deployment IDをコピーしました。');
   }
 
-  copyLibraryReference(item: DeploymentItem): void {
+  copyLibraryReference(item: DeploymentItem | VersionItem): void {
     const userSymbol = item.project.name
       .replace(/^\d+/, '')
       .replace(/[-@\s]/g, '');
-    const reference = {
-      libraryId: item.projectId,
-      developmentMode: isHeadDeployment(item.deployment),
-      version: isHeadDeployment(item.deployment)
-        ? '0'
-        : item.deployment.versionNumber,
-      userSymbol,
-    };
+
+    const reference: LibraryReference =
+      item instanceof DeploymentItem
+        ? {
+            libraryId: item.project.id,
+            developmentMode: isHeadDeployment(item.deployment),
+            version: isHeadDeployment(item.deployment)
+              ? '0'
+              : item.deployment.versionNumber.toString(),
+            userSymbol,
+          }
+        : {
+            libraryId: item.project.id,
+            developmentMode: false,
+            version: item.version.versionNumber.toString(),
+            userSymbol,
+          };
     env.clipboard.writeText(JSON.stringify(reference, null, 2));
     window.showInformationMessage('ライブラリ参照をコピーしました。');
   }
@@ -182,7 +198,12 @@ export class ProjectsViewProvider
       });
     } else if (element instanceof DeploymentItem) {
       return element.versions.map(
-        (version) => new VersionItem(version, TreeItemCollapsibleState.None)
+        (version) =>
+          new VersionItem(
+            element.project,
+            version,
+            TreeItemCollapsibleState.None
+          )
       );
     } else {
       const projects = await this.client.getProjects();
@@ -209,8 +230,6 @@ export class ProjectItem extends DependencyElement {
 }
 
 export class DeploymentItem extends DependencyElement {
-  readonly projectId: string;
-
   constructor(
     public readonly project: GoogleAppsScriptProject,
     public readonly deployment: GoogleAppsScriptDeployment,
@@ -220,7 +239,6 @@ export class DeploymentItem extends DependencyElement {
     super(deployment.versionIdentity, collapsibleState);
     this.contextValue = 'deployment';
     this.id = deployment.id;
-    this.projectId = deployment.projectId;
     this.description = 'description' in deployment && deployment.description;
     this.tooltip = deployment.versionIdentity;
   }
@@ -228,6 +246,7 @@ export class DeploymentItem extends DependencyElement {
 
 export class VersionItem extends DependencyElement {
   constructor(
+    public readonly project: GoogleAppsScriptProject,
     public readonly version: GoogleAppsScriptVersion,
     public collapsibleState: TreeItemCollapsibleState
   ) {
