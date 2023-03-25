@@ -4,27 +4,20 @@ import { readFile, mkdir } from 'fs/promises';
 import { google } from 'googleapis';
 import { homedir } from 'os';
 import { Uri } from 'vscode';
+import {
+  GoogleAppsScriptDeployment,
+  GoogleAppsScriptProject,
+  GoogleAppsScriptVersion,
+} from '../domain/googleAppsScript';
+import { version } from 'node:os';
 
 const exec = promisify(childProcess.exec);
 
 export interface GoogleAppsScriptClient {
-  downloadProject(project: Project, path: Uri): Promise<string>;
-  getDeployments(projectId: string): Promise<Deployment[]>;
-  getProjects(): Promise<Project[]>;
-}
-
-export interface Project {
-  name: string;
-  id: string;
-  url: string;
-}
-
-export interface Deployment {
-  id: string;
-  projectId: string;
-  description: string | undefined;
-  versionNumber: number | undefined;
-  versionIdentity: string;
+  downloadProject(project: GoogleAppsScriptProject, path: Uri): Promise<string>;
+  getProjects(): Promise<GoogleAppsScriptProject[]>;
+  getDeployments(projectId: string): Promise<GoogleAppsScriptDeployment[]>;
+  getVersions(projectId: string): Promise<GoogleAppsScriptVersion[]>;
 }
 
 export class ClaspGoogleAppsScriptClient implements GoogleAppsScriptClient {
@@ -38,14 +31,17 @@ export class ClaspGoogleAppsScriptClient implements GoogleAppsScriptClient {
     google.options({ auth: oauth2Client });
   }
 
-  async downloadProject(project: Project, destination: Uri): Promise<string> {
+  async downloadProject(
+    project: GoogleAppsScriptProject,
+    destination: Uri
+  ): Promise<string> {
     const dir = `${destination.fsPath}/${project.name}`;
     await mkdir(dir);
     await exec(`${this.claspPath} clone ${project.id} --rootDir '${dir}'`);
     return dir;
   }
 
-  async getProjects(): Promise<Project[]> {
+  async getProjects(): Promise<GoogleAppsScriptProject[]> {
     const drive = google.drive('v3');
     const {
       data: { files = [] },
@@ -66,19 +62,42 @@ export class ClaspGoogleAppsScriptClient implements GoogleAppsScriptClient {
     }));
   }
 
-  async getDeployments(projectId: string): Promise<Deployment[]> {
+  async getDeployments(
+    projectId: string
+  ): Promise<GoogleAppsScriptDeployment[]> {
     const script = google.script('v1');
     const list = await script.projects.deployments.list({
       scriptId: projectId,
     });
-    return (list.data.deployments || []).map((deployment) => ({
-      id: deployment.deploymentId!,
-      projectId: deployment.deploymentConfig?.scriptId!,
-      description: deployment.deploymentConfig?.description || undefined,
-      versionNumber: deployment.deploymentConfig?.versionNumber || undefined,
-      versionIdentity: `@${
-        deployment.deploymentConfig?.versionNumber?.toString() || 'HEAD'
-      }`,
+    return (list.data.deployments || []).map((deployment) => {
+      const versionNumber = deployment.deploymentConfig?.versionNumber;
+      if (!versionNumber) {
+        return {
+          id: deployment.deploymentId!,
+          projectId: deployment.deploymentConfig?.scriptId!,
+          versionIdentity: '@HEAD',
+        };
+      } else {
+        return {
+          id: deployment.deploymentId!,
+          projectId: deployment.deploymentConfig?.scriptId!,
+          description: deployment.deploymentConfig?.description || undefined,
+          versionIdentity: `@${versionNumber.toString()}`,
+          versionNumber,
+        };
+      }
+    });
+  }
+
+  async getVersions(projectId: string): Promise<GoogleAppsScriptVersion[]> {
+    const script = google.script('v1');
+    const list = await script.projects.versions.list({
+      scriptId: projectId,
+    });
+    return (list.data.versions || []).map((version) => ({
+      projectId,
+      versionNumber: version.versionNumber!,
+      description: version.description || undefined,
     }));
   }
 }
