@@ -1,3 +1,6 @@
 {
-	"*.ts": "eslint src --ext ts"
+	"*.ts": [
+		"eslint src --ext ts",
+		"bash -c 'npm run lint:tsc'"
+	]
 }

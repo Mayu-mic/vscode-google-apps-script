@@ -80,6 +80,16 @@
           "command": "vscode-google-apps-script.copyLibraryReference",
           "when": "view == projects-view && viewItem == deployment",
           "group": "deployment@2"
+        },
+        {
+          "command": "vscode-google-apps-script.copyProjectId",
+          "when": "view == projects-view && viewItem == version",
+          "group": "version@1"
+        },
+        {
+          "command": "vscode-google-apps-script.copyLibraryReference",
+          "when": "view == projects-view && viewItem == version",
+          "group": "version@2"
         }
       ]
     },
@@ -107,7 +117,9 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
+    "lint:eslint": "eslint src --ext ts",
+    "lint:tsc": "tsc --noEmit",
+    "lint": "npm run lint:eslint && npm run lint:tsc",
     "test": "node ./out/test/runTest.js",
     "commit": "git cz",
     "prepare": "husky install",
