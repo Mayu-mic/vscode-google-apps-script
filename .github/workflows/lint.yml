@@ -1,0 +1,22 @@
+name: Lint
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - release
+jobs:
+  lint:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Node.js 16.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+      - name: Install libraries
+        run: npm ci
+      - name: Code check
+        run: npm run lint

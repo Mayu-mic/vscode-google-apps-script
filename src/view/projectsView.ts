@@ -1,7 +1,6 @@
 import {
   Event,
   EventEmitter,
-  ProviderResult,
   TreeDataProvider,
   TreeItem,
   TreeItemCollapsibleState,
@@ -14,16 +13,30 @@ import {
   QuickPickItem,
 } from 'vscode';
 import { showExtendedQuickPick } from '../ui/showExtendedQuickPick';
-import { Deployment, IGoogleAppsScriptClient, Project } from '../claspClient';
+import { GoogleAppsScriptClient } from '../clients/claspClient';
+import {
+  GoogleAppsScriptDeployment,
+  GoogleAppsScriptProject,
+  GoogleAppsScriptVersion,
+  isHeadDeployment,
+} from '../domain/googleAppsScript';
+
+interface LibraryReference {
+  libraryId: string;
+  developmentMode: boolean;
+  version: string;
+  userSymbol: string;
+}
 
 export class ProjectsViewProvider
   implements TreeDataProvider<DependencyElement>
 {
-  constructor(private client: IGoogleAppsScriptClient) {}
+  constructor(private client: GoogleAppsScriptClient) {}
 
   private _onDidChangeTreeData: EventEmitter<
     void | DependencyElement | DependencyElement[] | null | undefined
   > = new EventEmitter();
+
   onDidChangeTreeData?: Event<
     void | DependencyElement | DependencyElement[] | null | undefined
   > = this._onDidChangeTreeData.event;
@@ -123,16 +136,27 @@ export class ProjectsViewProvider
     window.showInformationMessage('Deployment IDをコピーしました。');
   }
 
-  copyLibraryReference(item: DeploymentItem): void {
+  copyLibraryReference(item: DeploymentItem | VersionItem): void {
     const userSymbol = item.project.name
       .replace(/^\d+/, '')
       .replace(/[-@\s]/g, '');
-    const reference = {
-      libraryId: item.projectId,
-      developmentMode: item.deployment.versionNumber === undefined,
-      version: item.deployment.versionNumber?.toString() ?? '0',
-      userSymbol,
-    };
+
+    const reference: LibraryReference =
+      item instanceof DeploymentItem
+        ? {
+            libraryId: item.project.id,
+            developmentMode: isHeadDeployment(item.deployment),
+            version: isHeadDeployment(item.deployment)
+              ? '0'
+              : item.deployment.versionNumber.toString(),
+            userSymbol,
+          }
+        : {
+            libraryId: item.project.id,
+            developmentMode: false,
+            version: item.version.versionNumber.toString(),
+            userSymbol,
+          };
     env.clipboard.writeText(JSON.stringify(reference, null, 2));
     window.showInformationMessage('ライブラリ参照をコピーしました。');
   }
@@ -141,32 +165,52 @@ export class ProjectsViewProvider
     return element;
   }
 
-  getChildren(
+  async getChildren(
     element?: DependencyElement | undefined
-  ): ProviderResult<DependencyElement[]> {
+  ): Promise<DependencyElement[]> {
     if (element instanceof ProjectItem) {
-      const project = element.project;
-      return this.client
-        .getDeployments(element.id!)
-        .then((deployments) =>
-          deployments.map(
-            (deployment) =>
-              new DeploymentItem(
-                deployment,
-                project,
-                TreeItemCollapsibleState.None
-              )
+      const allVersions = await this.client.getVersions(element.id!);
+      const deployments = await this.client.getDeployments(element.id!);
+      const deployedVersionNumbers = deployments.flatMap((d) =>
+        isHeadDeployment(d) ? [] : [d.versionNumber]
+      );
+      const notDeployedVersions = allVersions.filter(
+        (version) => !deployedVersionNumbers.includes(version.versionNumber)
+      );
+      return deployments.map((deployment) => {
+        if (isHeadDeployment(deployment)) {
+          return new DeploymentItem(
+            element.project,
+            deployment,
+            notDeployedVersions,
+            notDeployedVersions.length > 0
+              ? TreeItemCollapsibleState.Expanded
+              : TreeItemCollapsibleState.None
+          );
+        } else {
+          return new DeploymentItem(
+            element.project,
+            deployment,
+            [],
+            TreeItemCollapsibleState.None
+          );
+        }
+      });
+    } else if (element instanceof DeploymentItem) {
+      return element.versions.map(
+        (version) =>
+          new VersionItem(
+            element.project,
+            version,
+            TreeItemCollapsibleState.None
           )
-        );
+      );
     } else {
-      return this.client
-        .getProjects()
-        .then((projects) =>
-          projects.map(
-            (project) =>
-              new ProjectItem(project, TreeItemCollapsibleState.Collapsed)
-          )
-        );
+      const projects = await this.client.getProjects();
+      return projects.map(
+        (project) =>
+          new ProjectItem(project, TreeItemCollapsibleState.Collapsed)
+      );
     }
   }
 }
@@ -175,7 +219,7 @@ abstract class DependencyElement extends TreeItem {}
 
 export class ProjectItem extends DependencyElement {
   constructor(
-    public readonly project: Project,
+    public readonly project: GoogleAppsScriptProject,
     public collapsibleState: TreeItemCollapsibleState
   ) {
     super(project.name, collapsibleState);
@@ -186,18 +230,30 @@ export class ProjectItem extends DependencyElement {
 }
 
 export class DeploymentItem extends DependencyElement {
-  readonly projectId: string;
-
   constructor(
-    public readonly deployment: Deployment,
-    public readonly project: Project,
+    public readonly project: GoogleAppsScriptProject,
+    public readonly deployment: GoogleAppsScriptDeployment,
+    public readonly versions: GoogleAppsScriptVersion[],
     public collapsibleState: TreeItemCollapsibleState
   ) {
     super(deployment.versionIdentity, collapsibleState);
     this.contextValue = 'deployment';
     this.id = deployment.id;
-    this.projectId = deployment.projectId;
-    this.description = deployment.description;
+    this.description = 'description' in deployment && deployment.description;
     this.tooltip = deployment.versionIdentity;
+  }
+}
+
+export class VersionItem extends DependencyElement {
+  constructor(
+    public readonly project: GoogleAppsScriptProject,
+    public readonly version: GoogleAppsScriptVersion,
+    public collapsibleState: TreeItemCollapsibleState
+  ) {
+    super(`v${version.versionNumber}`, collapsibleState);
+    this.contextValue = 'version';
+    this.id = version.versionNumber.toString();
+    this.description = version.description;
+    this.tooltip = `Version ${version.versionNumber}`;
   }
 }
