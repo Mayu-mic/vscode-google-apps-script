@@ -252,7 +252,7 @@ export class VersionItem extends DependencyElement {
   ) {
     super(`v${version.versionNumber}`, collapsibleState);
     this.contextValue = 'version';
-    this.id = version.versionNumber.toString();
+    this.id = `${project.id}-version-${version.versionNumber}`;
     this.description = version.description;
     this.tooltip = `Version ${version.versionNumber}`;
   }
