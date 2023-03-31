@@ -1,7 +1,7 @@
 import * as childProcess from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFile, mkdir } from 'fs/promises';
-import { google } from 'googleapis';
+import { google, script_v1 } from 'googleapis';
 import { homedir } from 'os';
 import { Uri } from 'vscode';
 import {
@@ -9,7 +9,6 @@ import {
   GoogleAppsScriptProject,
   GoogleAppsScriptVersion,
 } from '../domain/googleAppsScript';
-import { version } from 'node:os';
 
 const exec = promisify(childProcess.exec);
 
@@ -66,10 +65,19 @@ export class ClaspGoogleAppsScriptClient implements GoogleAppsScriptClient {
     projectId: string
   ): Promise<GoogleAppsScriptDeployment[]> {
     const script = google.script('v1');
-    const list = await script.projects.deployments.list({
-      scriptId: projectId,
-    });
-    return (list.data.deployments || []).map((deployment) => {
+
+    let nextPageToken: string | undefined;
+    let deployments: script_v1.Schema$Deployment[] = [];
+
+    do {
+      const list = await script.projects.deployments.list({
+        scriptId: projectId,
+      });
+      deployments = deployments.concat(list.data.deployments || []);
+      nextPageToken = list.data.nextPageToken ?? undefined;
+    } while (nextPageToken);
+
+    return deployments.map((deployment) => {
       const versionNumber = deployment.deploymentConfig?.versionNumber;
       if (!versionNumber) {
         return {
@@ -91,10 +99,19 @@ export class ClaspGoogleAppsScriptClient implements GoogleAppsScriptClient {
 
   async getVersions(projectId: string): Promise<GoogleAppsScriptVersion[]> {
     const script = google.script('v1');
-    const list = await script.projects.versions.list({
-      scriptId: projectId,
-    });
-    return (list.data.versions || []).map((version) => ({
+
+    let nextPageToken: string | undefined;
+    let versions: script_v1.Schema$Version[] = [];
+
+    do {
+      const list = await script.projects.versions.list({
+        scriptId: projectId,
+      });
+      versions = versions.concat(list.data.versions || []);
+      nextPageToken = list.data.nextPageToken ?? undefined;
+    } while (nextPageToken);
+
+    return versions.map((version) => ({
       projectId,
       versionNumber: version.versionNumber!,
       description: version.description || undefined,
