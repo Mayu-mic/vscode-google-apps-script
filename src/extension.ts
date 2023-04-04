@@ -38,9 +38,9 @@ export async function activate(context: vscode.ExtensionContext) {
     return;
   }
 
-  const claspClient = new ClaspGoogleAppsScriptClient(claspPath);
+  let claspClient: ClaspGoogleAppsScriptClient;
   try {
-    await claspClient.setupAuth();
+    claspClient = await ClaspGoogleAppsScriptClient.setupFromPath(claspPath);
   } catch (error) {
     vscode.window.showErrorMessage(
       'claspの認証に失敗しました。`clasp login` を試してください。'
