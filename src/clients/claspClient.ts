@@ -20,15 +20,7 @@ export interface GoogleAppsScriptClient {
 }
 
 export class ClaspGoogleAppsScriptClient implements GoogleAppsScriptClient {
-  constructor(private claspPath: string) {}
-
-  async setupAuth() {
-    const buffer = await readFile(`${homedir()}/.clasprc.json`);
-    const json = JSON.parse(buffer.toString());
-    const oauth2Client = new google.auth.OAuth2(json.oauth2ClientSettings);
-    oauth2Client.setCredentials(json.token);
-    google.options({ auth: oauth2Client });
-  }
+  private constructor(private claspPath: string) {}
 
   async downloadProject(
     project: GoogleAppsScriptProject,
@@ -116,5 +108,17 @@ export class ClaspGoogleAppsScriptClient implements GoogleAppsScriptClient {
       versionNumber: version.versionNumber!,
       description: version.description || undefined,
     }));
+  }
+
+  static async setupFromPath(
+    claspPath: string
+  ): Promise<ClaspGoogleAppsScriptClient> {
+    const buffer = await readFile(`${homedir()}/.clasprc.json`);
+    const json = JSON.parse(buffer.toString());
+    const oauth2Client = new google.auth.OAuth2(json.oauth2ClientSettings);
+    oauth2Client.setCredentials(json.token);
+    google.options({ auth: oauth2Client });
+
+    return new ClaspGoogleAppsScriptClient(claspPath);
   }
 }
