@@ -62,9 +62,13 @@ export class ClaspGoogleAppsScriptClient implements GoogleAppsScriptClient {
     let deployments: script_v1.Schema$Deployment[] = [];
 
     do {
-      const list = await script.projects.deployments.list({
+      const params: script_v1.Params$Resource$Projects$Deployments$List = {
         scriptId: projectId,
-      });
+      };
+      if (nextPageToken) {
+        params['pageToken'] = nextPageToken;
+      }
+      const list = await script.projects.deployments.list(params);
       deployments = deployments.concat(list.data.deployments || []);
       nextPageToken = list.data.nextPageToken ?? undefined;
     } while (nextPageToken);
@@ -94,14 +98,30 @@ export class ClaspGoogleAppsScriptClient implements GoogleAppsScriptClient {
 
     let nextPageToken: string | undefined;
     let versions: script_v1.Schema$Version[] = [];
+    let previousMinimumVersionNumber = -1;
 
-    do {
-      const list = await script.projects.versions.list({
+    while (true) {
+      const params: script_v1.Params$Resource$Projects$Deployments$List = {
         scriptId: projectId,
-      });
-      versions = versions.concat(list.data.versions || []);
-      nextPageToken = list.data.nextPageToken ?? undefined;
-    } while (nextPageToken);
+      };
+      if (nextPageToken) {
+        params['pageToken'] = nextPageToken;
+      }
+      const list = await script.projects.versions.list(params);
+      if (list.data.versions) {
+        const versionNumbers = list.data.versions.map(
+          (version) => version.versionNumber!
+        );
+        const currentMinimumVersionNumber = Math.min(...versionNumbers);
+        if (currentMinimumVersionNumber === previousMinimumVersionNumber) {
+          break;
+        }
+        versions = versions.concat(list.data.versions || []);
+        previousMinimumVersionNumber = currentMinimumVersionNumber;
+      } else {
+        break;
+      }
+    }
 
     return versions.map((version) => ({
       projectId,
